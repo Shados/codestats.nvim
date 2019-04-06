@@ -2,10 +2,10 @@
 -- - configurable on/off
 -- - make it multiple-instance-safe
 export codestats
-nvimw = require 'wrapnvim'
-snlib = require 'snlib'
-inspect = require 'vendor.inspect'
-deque = require 'vendor.deque'
+vimw = require "facade"
+table_ = require "earthshine.table"
+inspect = require "vendor.inspect"
+deque = require "vendor.deque"
 
 -- Forward-define local helper functions
 local *
@@ -30,22 +30,22 @@ codestats =
   -- Given use of flush calls, multiple append-mode writers to the log file is
   -- unlikely to result in corruption - if the log messages are larger than the
   -- buffer size, something very strange is going on
-  log_file: io.open nvimw.g_get('codestats_log_file'), "a"
+  log_file: io.open vimw.g_get('codestats_log_file'), "a"
 
   -- Module functions, these largely form the 'public API' for the module
   init: (api_key) =>
     -- Initialize configuration options
     @api_key = api_key
-    @pulse_frequency_ms = nvimw.g_get 'codestats_pulse_frequency_ms'
-    @api_url = nvimw.g_get 'codestats_api_url'
-    @curl_command = nvimw.g_get 'codestats_curl_command'
-    @logging = nvimw.g_get 'codestats_logging'
+    @pulse_frequency_ms = vimw.g_get 'codestats_pulse_frequency_ms'
+    @api_url = vimw.g_get 'codestats_api_url'
+    @curl_command = vimw.g_get 'codestats_curl_command'
+    @logging = vimw.g_get 'codestats_logging'
 
     -- Set up default 0 values for the xps table
     setmetatable @xps, xps_metatable
 
     -- Set up events to track XP being created
-    nvimw.exec [[
+    vimw.exec [[
       augroup codestats
         au!
         au InsertCharPre * lua codestats:add_xp("InsertCharPre")
@@ -55,29 +55,29 @@ codestats =
       ]]
 
     -- Add a timer to create and send XP pulses
-    @pulse_timer = nvimw.fn "timer_start", {
+    @pulse_timer = vimw.fn "timer_start", {
       @pulse_frequency_ms,
       "codestats#pulse_xp",
       { repeat: -1 }
     }
 
   add_xp: (event) =>
-    buffer_handle = nvimw.fn "bufnr", { "%" }
+    buffer_handle = vimw.fn "bufnr", { "%" }
     -- Plugins can trigger TextChanged on unmodifiable buffers, which we wish
     -- to ignore
-    modifiable = nvimw.b_option_get buffer_handle, 'modifiable'
+    modifiable = vimw.b_option_get buffer_handle, 'modifiable'
     -- Additionally, we seem to get a TextChanged event fired on opening a
     -- buffer, without any changes made -- so ignore first one per buffer
     local filetype
     if modifiable and @previously_added[buffer_handle]
-      filetype = nvimw.b_option_get buffer_handle, 'filetype'
+      filetype = vimw.b_option_get buffer_handle, 'filetype'
       @xps[filetype] += 1
     unless @previously_added[buffer_handle]
       @previously_added[buffer_handle] = true
     @log "add_xp() called from #{event}, filetype: #{filetype}, buffer modifiable: #{modifiable}, previously added: #{@previously_added[buffer_handle]}"
 
   pulse_xp: () =>
-    if snlib.length(@xps) == 0
+    if table_.size(@xps) == 0
       return
     -- Create pulse from current xps (clearing current xps), and schedule a pulse
     @pulses\push_right(create_pulse @xps)
@@ -113,11 +113,11 @@ codestats =
       pulse: pulse
 
     args = { cmd, opts }
-    jobid = nvimw.fn "jobstart", args
+    jobid = vimw.fn "jobstart", args
     if jobid == 0
       @log "Failed to start job, invalid arguments:\n#{inspect args}"
       print "codestats.nvim: Unrecoverable error - disabling pulses"
-      nvimw.fn "timer_stop", { @pulse_timer }
+      vimw.fn "timer_stop", { @pulse_timer }
     elseif jobid == -1
       @log "Failed to start job, `#{@curl_command}` is not executable:\n"
       print "codestats.nvim: `#{@curl_command}` is not executable -- either fix that, or set g:codestats_curl_command to the path to a working curl executable"
@@ -130,7 +130,7 @@ codestats =
     @pulsing = false
     pulse = opts.pulse
     data = opts.stdout
-    response = nvimw.fn "json_decode", { data }
+    response = vimw.fn "json_decode", { data }
     if error = response['error']
       @log "Pulse job ID #{jobid} failed with '#{error}'! Re-scheduling pulse:\n#{inspect pulse}"
       -- Add the pulse back onto the queue, at the front
@@ -186,7 +186,7 @@ pulse_metatable =
       -- ISO 8601 datetime with local timezone offset
       coded_at: os.date '%Y-%m-%dT%H:%M:%S%z', tbl.coded_time
       xps: tbl.xps
-    return nvimw.fn "json_encode", { pulse }
+    return vimw.fn "json_encode", { pulse }
 
 
 normalize_language = (language) ->

@@ -1,7 +1,7 @@
-local nvimw = require('wrapnvim')
-local snlib = require('snlib')
-local inspect = require('vendor.inspect')
-local deque = require('vendor.deque')
+local vimw = require("facade")
+local table_ = require("earthshine.table")
+local inspect = require("vendor.inspect")
+local deque = require("vendor.deque")
 local codestats_version, pulse_endpoint, week_in_seconds, xps_metatable, create_pulse, pulse_metatable, normalize_language
 codestats_version = "0.0.1"
 pulse_endpoint = "api/my/pulses"
@@ -17,22 +17,22 @@ codestats = {
   previously_added = { },
   pulses = deque.new(),
   pulsing = false,
-  log_file = io.open(nvimw.g_get('codestats_log_file'), "a"),
+  log_file = io.open(vimw.g_get('codestats_log_file'), "a"),
   init = function(self, api_key)
     self.api_key = api_key
-    self.pulse_frequency_ms = nvimw.g_get('codestats_pulse_frequency_ms')
-    self.api_url = nvimw.g_get('codestats_api_url')
-    self.curl_command = nvimw.g_get('codestats_curl_command')
-    self.logging = nvimw.g_get('codestats_logging')
+    self.pulse_frequency_ms = vimw.g_get('codestats_pulse_frequency_ms')
+    self.api_url = vimw.g_get('codestats_api_url')
+    self.curl_command = vimw.g_get('codestats_curl_command')
+    self.logging = vimw.g_get('codestats_logging')
     setmetatable(self.xps, xps_metatable)
-    nvimw.exec([[      augroup codestats
+    vimw.exec([[      augroup codestats
         au!
         au InsertCharPre * lua codestats:add_xp("InsertCharPre")
         au TextChanged * lua codestats:add_xp("TextChanged")
         au VimLeavePre * lua codestats:cleanup()
       augroup END
       ]])
-    self.pulse_timer = nvimw.fn("timer_start", {
+    self.pulse_timer = vimw.fn("timer_start", {
       self.pulse_frequency_ms,
       "codestats#pulse_xp",
       {
@@ -41,13 +41,13 @@ codestats = {
     })
   end,
   add_xp = function(self, event)
-    local buffer_handle = nvimw.fn("bufnr", {
+    local buffer_handle = vimw.fn("bufnr", {
       "%"
     })
-    local modifiable = nvimw.b_option_get(buffer_handle, 'modifiable')
+    local modifiable = vimw.b_option_get(buffer_handle, 'modifiable')
     local filetype
     if modifiable and self.previously_added[buffer_handle] then
-      filetype = nvimw.b_option_get(buffer_handle, 'filetype')
+      filetype = vimw.b_option_get(buffer_handle, 'filetype')
       local _update_0 = filetype
       self.xps[_update_0] = self.xps[_update_0] + 1
     end
@@ -57,7 +57,7 @@ codestats = {
     return self:log("add_xp() called from " .. tostring(event) .. ", filetype: " .. tostring(filetype) .. ", buffer modifiable: " .. tostring(modifiable) .. ", previously added: " .. tostring(self.previously_added[buffer_handle]))
   end,
   pulse_xp = function(self)
-    if snlib.length(self.xps) == 0 then
+    if table_.size(self.xps) == 0 then
       return 
     end
     self.pulses:push_right(create_pulse(self.xps))
@@ -99,11 +99,11 @@ codestats = {
       cmd,
       opts
     }
-    local jobid = nvimw.fn("jobstart", args)
+    local jobid = vimw.fn("jobstart", args)
     if jobid == 0 then
       self:log("Failed to start job, invalid arguments:\n" .. tostring(inspect(args)))
       print("codestats.nvim: Unrecoverable error - disabling pulses")
-      return nvimw.fn("timer_stop", {
+      return vimw.fn("timer_stop", {
         self.pulse_timer
       })
     elseif jobid == -1 then
@@ -118,7 +118,7 @@ codestats = {
     self.pulsing = false
     local pulse = opts.pulse
     local data = opts.stdout
-    local response = nvimw.fn("json_decode", {
+    local response = vimw.fn("json_decode", {
       data
     })
     do
@@ -169,7 +169,7 @@ pulse_metatable = {
       coded_at = os.date('%Y-%m-%dT%H:%M:%S%z', tbl.coded_time),
       xps = tbl.xps
     }
-    return nvimw.fn("json_encode", {
+    return vimw.fn("json_encode", {
       pulse
     })
   end

@@ -1,0 +1,22 @@
+{
+  "name": "codestats",
+  "author": "Alexei Robyn <shados@shados.net>",
+  "maintainer": "Alexei Robyn <shados@shados.net>",
+  "description": "A MoonScript + VimL implementation of a CodeStats.net client plugin",
+  "detailed": "A MoonScript + VimL implementation of a CodeStats.net client plugin",
+  "homepage": "https://github.com/Shados/codestats.nvim",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Shados/codestats.nvim"
+  },
+  "dependencies": {
+    "earthshine": {
+      "type": "git",
+      "url": "git://github.com/Shados/earthshine"
+    },
+    "facade": {
+      "type": "git",
+      "url": "git://github.com/Shados/facade.nvim"
+    }
+  }
+}

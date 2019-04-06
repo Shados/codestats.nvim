@@ -62,6 +62,13 @@ codestats =
     }
 
   add_xp: (event) =>
+    switch event
+      when "InsertCharPre"
+        @add_single_xp!
+      when "TextChanged"
+        @handle_text_changed!
+
+  add_single_xp: () =>
     buffer_handle = vimw.fn "bufnr", { "%" }
     -- Plugins can trigger TextChanged on unmodifiable buffers, which we wish
     -- to ignore
@@ -70,7 +77,13 @@ codestats =
     if modifiable
       filetype = vimw.b_option_get buffer_handle, 'filetype'
       @xps[filetype] += 1
-      @log "add_xp() called from #{event}, filetype: #{filetype}"
+      @log "add_single_xp() called, filetype: #{filetype}"
+
+  handle_text_changed: () =>
+    -- TODO properly handle TextChanged events by detecting what command was
+    -- used, ignoring commands that drop to insert mode, and adding 1 xp per
+    -- character in the command
+    nil
 
   pulse_xp: (is_cleanup=false) =>
     if table_.size(@xps) == 0
@@ -129,17 +142,18 @@ codestats =
     pulse = opts.pulse
     data = opts.stdout
     response = vimw.fn "json_decode", { data }
-    if error = response['error']
-      @log "Pulse job ID #{jobid} failed with '#{error}'! Re-scheduling pulse:\n#{inspect pulse}"
+    if err = response['error']
+      @log "Pulse job ID #{jobid} failed with '#{err}'! Re-scheduling pulse:\n#{inspect pulse}"
       -- Add the pulse back onto the queue, at the front
       @pulses\push_left pulse
     -- handle exit_code too
+    @log "Pulse callback caught full response: #{inspect response}"
 
     if @pulses\length! > 0
       @schedule_pulse!
 
   cleanup: () =>
-    @log "Launching cleanup pulse; XP will be lost if it fails"
+    @log "Launching cleanup pulse if necessary; XP will be lost if it fails"
     @pulse_xp true
     -- TODO Possibly serialize pulses to a cache file? Do I care that much?
 

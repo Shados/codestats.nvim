@@ -41,6 +41,14 @@ codestats = {
     })
   end,
   add_xp = function(self, event)
+    local _exp_0 = event
+    if "InsertCharPre" == _exp_0 then
+      return self:add_single_xp()
+    elseif "TextChanged" == _exp_0 then
+      return self:handle_text_changed()
+    end
+  end,
+  add_single_xp = function(self)
     local buffer_handle = vimw.fn("bufnr", {
       "%"
     })
@@ -50,8 +58,11 @@ codestats = {
       filetype = vimw.b_option_get(buffer_handle, 'filetype')
       local _update_0 = filetype
       self.xps[_update_0] = self.xps[_update_0] + 1
-      return self:log("add_xp() called from " .. tostring(event) .. ", filetype: " .. tostring(filetype))
+      return self:log("add_single_xp() called, filetype: " .. tostring(filetype))
     end
+  end,
+  handle_text_changed = function(self)
+    return nil
   end,
   pulse_xp = function(self, is_cleanup)
     if is_cleanup == nil then
@@ -125,18 +136,19 @@ codestats = {
       data
     })
     do
-      local error = response['error']
-      if error then
-        self:log("Pulse job ID " .. tostring(jobid) .. " failed with '" .. tostring(error) .. "'! Re-scheduling pulse:\n" .. tostring(inspect(pulse)))
+      local err = response['error']
+      if err then
+        self:log("Pulse job ID " .. tostring(jobid) .. " failed with '" .. tostring(err) .. "'! Re-scheduling pulse:\n" .. tostring(inspect(pulse)))
         self.pulses:push_left(pulse)
       end
     end
+    self:log("Pulse callback caught full response: " .. tostring(inspect(response)))
     if self.pulses:length() > 0 then
       return self:schedule_pulse()
     end
   end,
   cleanup = function(self)
-    self:log("Launching cleanup pulse; XP will be lost if it fails")
+    self:log("Launching cleanup pulse if necessary; XP will be lost if it fails")
     return self:pulse_xp(true)
   end,
   log = function(self, msg)

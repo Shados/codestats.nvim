@@ -66,15 +66,11 @@ codestats =
     -- Plugins can trigger TextChanged on unmodifiable buffers, which we wish
     -- to ignore
     modifiable = vimw.b_option_get buffer_handle, 'modifiable'
-    -- Additionally, we seem to get a TextChanged event fired on opening a
-    -- buffer, without any changes made -- so ignore first one per buffer
     local filetype
-    if modifiable and @previously_added[buffer_handle]
+    if modifiable
       filetype = vimw.b_option_get buffer_handle, 'filetype'
       @xps[filetype] += 1
-    unless @previously_added[buffer_handle]
-      @previously_added[buffer_handle] = true
-    @log "add_xp() called from #{event}, filetype: #{filetype}, buffer modifiable: #{modifiable}, previously added: #{@previously_added[buffer_handle]}"
+      @log "add_xp() called from #{event}, filetype: #{filetype}"
 
   pulse_xp: () =>
     if table_.size(@xps) == 0

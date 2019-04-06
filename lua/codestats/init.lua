@@ -46,15 +46,12 @@ codestats = {
     })
     local modifiable = vimw.b_option_get(buffer_handle, 'modifiable')
     local filetype
-    if modifiable and self.previously_added[buffer_handle] then
+    if modifiable then
       filetype = vimw.b_option_get(buffer_handle, 'filetype')
       local _update_0 = filetype
       self.xps[_update_0] = self.xps[_update_0] + 1
+      return self:log("add_xp() called from " .. tostring(event) .. ", filetype: " .. tostring(filetype))
     end
-    if not (self.previously_added[buffer_handle]) then
-      self.previously_added[buffer_handle] = true
-    end
-    return self:log("add_xp() called from " .. tostring(event) .. ", filetype: " .. tostring(filetype) .. ", buffer modifiable: " .. tostring(modifiable) .. ", previously added: " .. tostring(self.previously_added[buffer_handle]))
   end,
   pulse_xp = function(self)
     if table_.size(self.xps) == 0 then

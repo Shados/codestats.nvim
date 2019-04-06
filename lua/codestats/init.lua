@@ -53,14 +53,17 @@ codestats = {
       return self:log("add_xp() called from " .. tostring(event) .. ", filetype: " .. tostring(filetype))
     end
   end,
-  pulse_xp = function(self)
+  pulse_xp = function(self, is_cleanup)
+    if is_cleanup == nil then
+      is_cleanup = false
+    end
     if table_.size(self.xps) == 0 then
       return 
     end
     self.pulses:push_right(create_pulse(self.xps))
-    return self:schedule_pulse()
+    return self:schedule_pulse(is_cleanup)
   end,
-  schedule_pulse = function(self)
+  schedule_pulse = function(self, is_cleanup)
     if self.pulsing then
       return 
     end
@@ -92,6 +95,9 @@ codestats = {
       stdout_buffered = true,
       pulse = pulse
     }
+    if is_cleanup then
+      opts['detach'] = true
+    end
     local args = {
       cmd,
       opts
@@ -130,8 +136,8 @@ codestats = {
     end
   end,
   cleanup = function(self)
-    self:pulse_xp()
-    return self:log("Launching cleanup pulse; XP will be lost if it fails")
+    self:log("Launching cleanup pulse; XP will be lost if it fails")
+    return self:pulse_xp(true)
   end,
   log = function(self, msg)
     if self.logging then

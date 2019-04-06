@@ -72,14 +72,14 @@ codestats =
       @xps[filetype] += 1
       @log "add_xp() called from #{event}, filetype: #{filetype}"
 
-  pulse_xp: () =>
+  pulse_xp: (is_cleanup=false) =>
     if table_.size(@xps) == 0
       return
     -- Create pulse from current xps (clearing current xps), and schedule a pulse
     @pulses\push_right(create_pulse @xps)
-    @schedule_pulse!
+    @schedule_pulse is_cleanup
 
-  schedule_pulse: () =>
+  schedule_pulse: (is_cleanup) =>
     -- Guard against running more than one pulse process at a time
     if @pulsing
       return
@@ -107,6 +107,8 @@ codestats =
       on_exit: "codestats#pulse_callback"
       stdout_buffered: true
       pulse: pulse
+    if is_cleanup
+      opts['detach'] = true
 
     args = { cmd, opts }
     jobid = vimw.fn "jobstart", args
@@ -137,8 +139,8 @@ codestats =
       @schedule_pulse!
 
   cleanup: () =>
-    @pulse_xp!
     @log "Launching cleanup pulse; XP will be lost if it fails"
+    @pulse_xp true
     -- TODO Possibly serialize pulses to a cache file? Do I care that much?
 
   log: (msg) =>

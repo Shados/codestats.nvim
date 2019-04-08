@@ -77,7 +77,6 @@ codestats =
     if modifiable
       filetype = vimw.b_option_get buffer_handle, 'filetype'
       @xps[filetype] += 1
-      @log "add_single_xp() called, filetype: #{filetype}"
 
   handle_text_changed: () =>
     -- TODO properly handle TextChanged events by detecting what command was
@@ -141,6 +140,13 @@ codestats =
     @pulsing = false
     pulse = opts.pulse
     data = opts.stdout
+
+    if data[1] == ""
+      @log "Data returned from pulse was blank, exit code: #{exit_code}, opts: #{inspect opts}"
+      if @pulses\length! > 0
+        @schedule_pulse!
+      return
+
     response = vimw.fn "json_decode", { data }
     if err = response['error']
       @log "Pulse job ID #{jobid} failed with '#{err}'! Re-scheduling pulse:\n#{inspect pulse}"

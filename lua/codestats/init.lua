@@ -58,7 +58,6 @@ codestats = {
       filetype = vimw.b_option_get(buffer_handle, 'filetype')
       local _update_0 = filetype
       self.xps[_update_0] = self.xps[_update_0] + 1
-      return self:log("add_single_xp() called, filetype: " .. tostring(filetype))
     end
   end,
   handle_text_changed = function(self)
@@ -132,6 +131,13 @@ codestats = {
     self.pulsing = false
     local pulse = opts.pulse
     local data = opts.stdout
+    if data[1] == "" then
+      self:log("Data returned from pulse was blank, exit code: " .. tostring(exit_code) .. ", opts: " .. tostring(inspect(opts)))
+      if self.pulses:length() > 0 then
+        self:schedule_pulse()
+      end
+      return 
+    end
     local response = vimw.fn("json_decode", {
       data
     })

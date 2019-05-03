@@ -11,15 +11,13 @@ start = function()
     codestats_logging = false,
     codestats_log_file = "/tmp/codestats.nvim.log"
   })
-  do
-    local api_key = vimw.g_get("codestats_api_key")
-    if api_key then
-      require('codestats')
-      codestats:init(api_key)
-      return vimw.g_set('codestats_initialized', true)
-    else
-      return vimw.exec("echom 'You need to set g:codestats_api_key'")
-    end
+  local api_key = vimw.g_get("codestats_api_key")
+  if api_key and api_key ~= "" then
+    require('codestats')
+    codestats:init(api_key)
+    return vimw.g_set('codestats_initialized', true)
+  else
+    return vimw.exec("echom \"You need to set g:codestats_api_key\"")
   end
 end
 return {

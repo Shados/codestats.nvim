@@ -16,13 +16,14 @@ start = ->
     codestats_logging: false
     codestats_log_file: "/tmp/codestats.nvim.log"
 
-  if api_key = vimw.g_get "codestats_api_key"
+  api_key = vimw.g_get "codestats_api_key"
+  if api_key and api_key != ""
     -- Load in the codestats global (for state tracking)
     require('codestats')
     codestats\init api_key
     vimw.g_set 'codestats_initialized', true
   else
-    vimw.exec "echom 'You need to set g:codestats_api_key'"
+    vimw.exec "echom \"You need to set g:codestats_api_key\""
 
 { :start }
 
